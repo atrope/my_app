@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 void main() {
@@ -49,51 +50,78 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  AdManagerBannerAd? _adManagerBannerAd;
+  bool _adManagerBannerAdIsLoaded = false;
+
   void _incrementCounter() {
     launch('https://twitter.com/intent/tweet?text=xyz');
   }
 
   @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _adManagerBannerAd = AdManagerBannerAd(
+      adUnitId: '/6499/example/banner',
+      request: const AdManagerAdRequest(nonPersonalizedAds: true),
+      sizes: <AdSize>[AdSize.largeBanner],
+      listener: AdManagerBannerAdListener(
+        onAdLoaded: (Ad ad) {
+          print('$AdManagerBannerAd loaded.');
+          setState(() {
+            _adManagerBannerAdIsLoaded = true;
+          });
+        },
+        onAdFailedToLoad: (Ad ad, LoadAdError error) {
+          print('$AdManagerBannerAd failedToLoad: $error');
+          ad.dispose();
+        },
+        onAdOpened: (Ad ad) => print('$AdManagerBannerAd onAdOpened.'),
+        onAdClosed: (Ad ad) => print('$AdManagerBannerAd onAdClosed.'),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-    );
+    )..load();
   }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _adManagerBannerAd?.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: ListView.separated(
+            itemCount: 20,
+            separatorBuilder: (BuildContext context, int index) {
+              return Container(
+                height: 40,
+              );
+            },
+            itemBuilder: (BuildContext context, int index) {
+              final AdManagerBannerAd? adManagerBannerAd = _adManagerBannerAd;
+              if (index == 1) {
+                return MaterialButton(
+                  onPressed: _incrementCounter,
+                  child: const Text('Twitter'),
+                );
+              }
+              if (index % 5 == 0 &&
+                  _adManagerBannerAdIsLoaded &&
+                  adManagerBannerAd != null) {
+                return SizedBox(
+                  height: adManagerBannerAd.sizes[0].height.toDouble(),
+                  width: adManagerBannerAd.sizes[0].width.toDouble(),
+                  child: AdWidget(ad: _adManagerBannerAd!),
+                );
+              }
+
+              return const Text(
+                "xyz",
+                style: TextStyle(fontSize: 24),
+              );
+            },
+          ),
+        ),
+      );
 }
