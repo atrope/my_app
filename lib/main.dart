@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:my_app/ad_banner.dart';
-import 'package:my_app/page_two.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await PlatformViewsService.synchronizeToNativeViewHierarchy(false);
   runApp(MaterialApp(
     home: const MyApp(),
     color: Colors.white,
@@ -14,6 +17,9 @@ void main() {
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
+  void _onPressed() async =>
+      await launch('https://twitter.com/intent/tweet?text=xyz');
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,12 +31,7 @@ class MyApp extends StatelessWidget {
           const AdBanner(),
           ElevatedButton.icon(
             icon: const Icon(Icons.web),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const PageTwo()),
-              );
-            },
+            onPressed: _onPressed,
             label: const Text('Click Me'),
           ),
         ],
